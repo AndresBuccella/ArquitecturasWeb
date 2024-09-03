@@ -59,7 +59,7 @@ public class FacturaDAO implements DAO<Factura>{
 						rs.getInt("idFactura"),
 						rs.getInt("idCliente")
 						);
-				resultList.addLast(prod);
+				resultList.add(prod);
 			}
 		}catch(SQLException e) {
 			e.printStackTrace();

@@ -22,7 +22,7 @@ import main.java.entities.Producto;
 public class HelperCSVtoDB {
 
 	private static Iterable<CSVRecord> getData(String archivo, String[] header) throws IOException{
-		String path = "src/main/resources/" + archivo;
+		String path = "Integrador1/src/main/resources/" + archivo; //si se ejecuta en ECLIPSE borrar Integrador1/
 		Reader in = new FileReader(path);
 		CSVParser csvParser = CSVFormat.Builder.create(CSVFormat.EXCEL)
 								.setHeader(header)

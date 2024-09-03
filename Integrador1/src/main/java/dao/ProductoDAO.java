@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
+import main.java.dto.ProductoFacturadoDTO;
 import main.java.entities.Producto;
 
 public class ProductoDAO implements DAO<Producto> {
@@ -61,7 +62,7 @@ public class ProductoDAO implements DAO<Producto> {
 						rs.getString("nombre"),
 						rs.getFloat("valor")
 						);
-				resultList.addLast(prod);
+				resultList.add(prod);
 			}
 		}catch(SQLException e) {
 			e.printStackTrace();
@@ -135,9 +136,9 @@ public class ProductoDAO implements DAO<Producto> {
 
 	}
 	
-	public Optional<Producto> getProductoQueMasRecaudo(Connection conn) {
-		Producto p = null;
-		String query = "SELECT p.*, fp.cantidad, (p.valor * fp.cantidad) as total "
+	public Optional<ProductoFacturadoDTO> getProductoQueMasRecaudo(Connection conn) {
+		ProductoFacturadoDTO p = null;
+		String query = "SELECT p.nombre, fp.cantidad, (p.valor * fp.cantidad) as total "
 				+ "FROM producto p JOIN factura_producto fp USING (idProducto) "
 				+ "ORDER BY total desc "
 				+ "LIMIT 1";
@@ -145,10 +146,10 @@ public class ProductoDAO implements DAO<Producto> {
 			PreparedStatement ps = conn.prepareStatement(query);
 			ResultSet rs = ps.executeQuery();
 			if(rs.next()) {
-				p = new Producto(
-						rs.getInt("idProducto"),
+				p = new ProductoFacturadoDTO(
 						rs.getString("nombre"),
-						rs.getFloat("valor"));
+						rs.getInt("cantidad"),
+						rs.getFloat("total"));
 			}
 		}catch(SQLException e) {
             System.err.println("Error al obtener el producto que mas recaudo");

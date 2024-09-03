@@ -63,7 +63,7 @@ public class FacturaProductoDAO implements DAO<FacturaProducto>{
 						rs.getInt("idProducto"),
 						rs.getInt("cantidad")
 						);
-				resultList.addLast(prod);
+				resultList.add(prod);
 			}
 		}catch(SQLException e) {
 			e.printStackTrace();

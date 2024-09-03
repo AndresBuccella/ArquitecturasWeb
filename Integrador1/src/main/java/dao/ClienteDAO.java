@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
+import main.java.dto.ClienteConFacturacionDTO;
 import main.java.entities.Cliente;
 
 public class ClienteDAO implements DAO<Cliente>{
@@ -61,7 +62,7 @@ public class ClienteDAO implements DAO<Cliente>{
 						rs.getString("nombre"),
 						rs.getString("email")
 						);
-				resultList.addLast(c);
+				resultList.add(c);
 			}
 		}catch(SQLException e) {
 			e.printStackTrace();
@@ -135,9 +136,10 @@ public class ClienteDAO implements DAO<Cliente>{
 
 	}
 	
-	public Iterable<Cliente> getClientesPorFacturacion(Connection conn){
-		List<Cliente> list = new LinkedList<Cliente>();
-		String query = "SELECT c.*, SUM(p.valor * fp.cantidad) as total "
+	public Iterable<ClienteConFacturacionDTO> getClientesPorFacturacion(Connection conn){
+		this.validateConnection(conn);
+		List<ClienteConFacturacionDTO> list = new LinkedList<ClienteConFacturacionDTO>();
+		String query = "SELECT c.idCliente, c.nombre, SUM(fp.cantidad) as cantidad, SUM(p.valor * fp.cantidad) as total "
 				+ "FROM cliente c "
 				+ "JOIN factura f USING (idCliente) "
 				+ "JOIN factura_producto fp USING (idFactura) "
@@ -148,11 +150,11 @@ public class ClienteDAO implements DAO<Cliente>{
 			PreparedStatement ps = conn.prepareStatement(query);
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
-				Cliente cliente = new Cliente(
-						rs.getInt("idCliente"),
+				ClienteConFacturacionDTO cliente = new ClienteConFacturacionDTO(
 						rs.getString("nombre"),
-						rs.getString("email"));
-				list.addLast(cliente);
+						rs.getInt("cantidad"),
+						rs.getFloat("total"));
+				list.add(cliente);
 			}
 		}catch(SQLException e) {
 			e.printStackTrace();
