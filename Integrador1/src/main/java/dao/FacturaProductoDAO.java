@@ -4,16 +4,25 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Deque;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Optional;
 
 import main.java.entities.FacturaProducto;
 
 public class FacturaProductoDAO implements DAO<FacturaProducto>{
 
-	public FacturaProductoDAO() {}
-	
+	private static FacturaProductoDAO instance = null;
+
+	private FacturaProductoDAO() {}
+
+	public static FacturaProductoDAO getInstance(){
+		if(instance == null){
+			instance = new FacturaProductoDAO();
+		}
+		return instance;
+	}
+
 	private void validateConnection(Connection conn) {
 	    if (conn == null) {
 	        throw new IllegalArgumentException("La conexión no puede ser null");
@@ -52,10 +61,11 @@ public class FacturaProductoDAO implements DAO<FacturaProducto>{
 	public Iterable<FacturaProducto> getAll(Connection conn) {
 		this.validateConnection(conn);
 
-		List<FacturaProducto> resultList = new LinkedList<FacturaProducto>();
+		Deque<FacturaProducto> resultList = new LinkedList<FacturaProducto>();
 		String query = "SELECT * FROM factura_producto";
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = conn.prepareStatement(query);
+			ps = conn.prepareStatement(query);
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
 				FacturaProducto prod = new FacturaProducto(
@@ -63,11 +73,13 @@ public class FacturaProductoDAO implements DAO<FacturaProducto>{
 						rs.getInt("idProducto"),
 						rs.getInt("cantidad")
 						);
-				resultList.add(prod);
+				resultList.addLast(prod);
 			}
 		}catch(SQLException e) {
 			e.printStackTrace();
             System.err.println("Error al obtener todas las factura_producto");
+		}finally {
+			this.closePs(ps);
 		}
 		
 		return resultList;
@@ -79,17 +91,19 @@ public class FacturaProductoDAO implements DAO<FacturaProducto>{
 		if(facturaProductoNueva == null)
 			throw new IllegalArgumentException("La factura actualizada no puede ser null");
 		String query = "INSERT INTO factura_producto VALUES(?,?,?)";
-		
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = conn.prepareStatement(query);
+			ps = conn.prepareStatement(query);
 			ps.setInt(1, facturaProductoNueva.getIdFactura());
 			ps.setInt(2, facturaProductoNueva.getIdProducto());
 			ps.setInt(3, facturaProductoNueva.getCantidadProducto());
 			ps.executeUpdate();
-			this.closePsAndCommit(conn, ps);
+			this.commit(conn);
 		}catch(SQLException e) {
 			e.printStackTrace();
 			System.err.println("Error al insertar la nueva factura_producto");
+		}finally {
+			this.closePs(ps);
 		}
 
 	}
@@ -143,24 +157,26 @@ public class FacturaProductoDAO implements DAO<FacturaProducto>{
 
 	}
 	*/
-	
-    private void closePsAndCommit(Connection conn, PreparedStatement ps) {
-		this.validateConnection(conn);
-            try {
-                conn.commit();
-            } catch (SQLException e) {
-                e.printStackTrace();
-                System.err.println("Error al hacer commit");
-            }finally {
-            	try {
-            		if(ps!=null)
-            			ps.close();            		
-            	}catch (SQLException e) {
-                    e.printStackTrace();
-                    System.err.println("Error al cerrar el prepared statement");
-                }
-            }
-    }
+
+	private void closePs(PreparedStatement ps) {
+		try {
+			if(ps!=null)
+				ps.close();
+		}catch (SQLException e) {
+			e.printStackTrace();
+			System.err.println("Error al cerrar el prepared statement");
+		}
+
+	}
+
+	private void commit(Connection conn){
+		try {
+			conn.commit();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.err.println("Error al hacer commit");
+		}
+	}
 	private static void rollbackQuietly(Connection conn) {
 		try {
 			conn.rollback();
@@ -171,7 +187,7 @@ public class FacturaProductoDAO implements DAO<FacturaProducto>{
 	}
 	public void createTable(Connection conn) {
 		this.validateConnection(conn);
-		String table = "CREATE TABLE IF NOT EXISTS factura_producto("
+		String newTable = "CREATE TABLE IF NOT EXISTS factura_producto("
 				+ "idFactura INT,"
 				+ "idProducto INT,"
 				+ "cantidad INT,"
@@ -179,27 +195,33 @@ public class FacturaProductoDAO implements DAO<FacturaProducto>{
 				+ "FOREIGN KEY(idFactura) REFERENCES factura(idFactura),"
 				+ "FOREIGN KEY(idProducto) REFERENCES producto(idProducto)"
 				+ ")";
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = conn.prepareStatement(table);
+			ps = conn.prepareStatement(newTable);
 			ps.execute();
-			this.closePsAndCommit(conn, ps);
+			this.commit(conn);
 		}catch(SQLException e) {
 			rollbackQuietly(conn);
 			System.err.println("Error al crear la tabla factura_producto");
 			e.printStackTrace();
+		}finally {
+			this.closePs(ps);
 		}
 	}
 	public void dropTable(Connection conn) {
 		this.validateConnection(conn);
 		
 		String delete = "DROP TABLE IF EXISTS factura_producto";
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = conn.prepareStatement(delete);
+			ps = conn.prepareStatement(delete);
 			ps.execute();
-			this.closePsAndCommit(conn, ps);
+			this.commit(conn);
 		}catch(SQLException e) {
 			rollbackQuietly(conn);
 			System.err.println("Error al borrar la tabla factura_producto");
+		}finally {
+			this.closePs(ps);
 		}
 	}
 }

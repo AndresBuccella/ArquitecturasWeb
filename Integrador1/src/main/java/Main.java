@@ -18,11 +18,12 @@ public class Main {
 	public static void main(String[] args) {
 		try {
 			FactoryDB fDB = FactoryDB.getDAOFactory(1);			
-			DAO<Cliente> clienteDAO = fDB.getClienteDAO();	
-			DAO<Producto> productoDAO = fDB.getProductoDAO();	
+			Connection conn = fDB.getConnection();
+
+			DAO<Cliente> clienteDAO = fDB.getClienteDAO();
+			DAO<Producto> productoDAO = fDB.getProductoDAO();
 			//DAO<Factura> facturaDAO = fDB.getFacturaDAO();
 			//DAO<FacturaProducto> facturaProductoDAO = fDB.getFacturaProductoDAO();
-			Connection conn = fDB.getConnection();
 
 			ProductoDAO pd = (ProductoDAO) productoDAO;
 			ClienteDAO cd = (ClienteDAO) clienteDAO;
@@ -40,13 +41,14 @@ public class Main {
 
 			HelperCSVtoDB.insertCSVDataIntoDB(conn);
 */
-
+/*
 			for (ClienteConFacturacionDTO ccfDTO : cd.getClientesPorFacturacion(conn)) {
 				System.out.println(ccfDTO);
-			}
+			}*/
 			//System.out.println(clienteDAO.get(conn, 1).get()); //El ultimo get obtiene el elemento dentro del optional
-			System.out.println(pd.getProductoQueMasRecaudo(conn).get());
-			
+			//System.out.println(pd.getProductoQueMasRecaudo(conn).get());
+			for(Cliente c : clienteDAO.getAll(conn))
+				System.out.println(c);
 			fDB.closeConnection(conn);
 		}catch(Exception e) {
 			e.printStackTrace();

@@ -4,8 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Deque;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Optional;
 
 import main.java.dto.ClienteConFacturacionDTO;
@@ -13,8 +13,17 @@ import main.java.entities.Cliente;
 
 public class ClienteDAO implements DAO<Cliente>{
 
-	public ClienteDAO() {}
-	
+	private static ClienteDAO instance = null;
+
+	private ClienteDAO() {}
+
+	public static ClienteDAO getInstance(){
+		if(instance == null){
+			instance = new ClienteDAO();
+		}
+		return instance;
+	}
+
 	private void validateConnection(Connection conn) {
 	    if (conn == null) {
 	        throw new IllegalArgumentException("La conexión no puede ser null");
@@ -25,9 +34,9 @@ public class ClienteDAO implements DAO<Cliente>{
 		this.validateConnection(conn);
 		Cliente c = null;
 		String query = "SELECT * FROM cliente WHERE (idCliente) like ?";
-		
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = conn.prepareStatement(query);
+			ps = conn.prepareStatement(query);
 			ps.setInt(1, idCliente);
 			ResultSet rs = ps.executeQuery();
 			if(rs.next()) {
@@ -37,12 +46,12 @@ public class ClienteDAO implements DAO<Cliente>{
 						rs.getString("email")
 						);
 			}
-				
 		}catch(SQLException e) {
 			e.printStackTrace();
             System.err.println("Error al obtener el cliente" + idCliente);
+		}finally {
+			this.closePs(ps);
 		}
-
 		return Optional.ofNullable(c);
 	}
 
@@ -50,11 +59,11 @@ public class ClienteDAO implements DAO<Cliente>{
 	public Iterable<Cliente> getAll(Connection conn) {
 		this.validateConnection(conn);
 
-		List<Cliente> resultList = new LinkedList<Cliente>();
+		Deque<Cliente> resultList = new LinkedList<Cliente>();
 		String query = "SELECT * FROM cliente";
-		
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = conn.prepareStatement(query);
+			ps = conn.prepareStatement(query);
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
 				Cliente c = new Cliente(
@@ -62,13 +71,15 @@ public class ClienteDAO implements DAO<Cliente>{
 						rs.getString("nombre"),
 						rs.getString("email")
 						);
-				resultList.add(c);
+				resultList.addLast(c);
 			}
 		}catch(SQLException e) {
 			e.printStackTrace();
             System.err.println("Error al obtener todos los clientes");
+		}finally {
+			this.closePs(ps);
 		}
-		
+		//conn.close();
 		return resultList;
 	}
 
@@ -78,19 +89,20 @@ public class ClienteDAO implements DAO<Cliente>{
 		if(clienteNuevo == null)
 			throw new IllegalArgumentException("El cliente actualizado no puede ser null");
 		String query = "INSERT INTO cliente VALUES(?,?,?)";
-		
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = conn.prepareStatement(query);
+			ps = conn.prepareStatement(query);
 			ps.setInt(1, clienteNuevo.getIdCliente());
 			ps.setString(2, clienteNuevo.getNombre());
 			ps.setString(3, clienteNuevo.getEmail());
 			ps.executeUpdate();
-			this.closePsAndCommit(conn, ps);
+			this.commit(conn);
 		}catch(SQLException e) {
 			e.printStackTrace();
 			System.err.println("Error al insertar el nuevo cliente");
+		}finally {
+			this.closePs(ps);
 		}
-
 	}
 
 	@Override
@@ -100,18 +112,20 @@ public class ClienteDAO implements DAO<Cliente>{
 			throw new IllegalArgumentException("El cliente actualizado no puede ser null");
 		
 		String query = "UPDATE cliente SET nombre = ?, email = ? WHERE idCliente = ?";
-		
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = conn.prepareStatement(query);
+			ps = conn.prepareStatement(query);
 			ps.setString(1, clienteActualizado.getNombre());
 			ps.setString(2, clienteActualizado.getEmail());
 			ps.setInt(3, clienteActualizado.getIdCliente());
 			ps.executeUpdate();
-			this.closePsAndCommit(conn, ps);
+			this.commit(conn);
 		}catch(SQLException e) {
 			rollbackQuietly(conn);
 			e.printStackTrace();
             System.err.println("Error al actualizar cliente: " + clienteActualizado.getIdCliente());
+		}finally {
+			this.closePs(ps);
 		}
 
 	}
@@ -123,22 +137,24 @@ public class ClienteDAO implements DAO<Cliente>{
 			throw new IllegalArgumentException("El id debe ser mayor a 0");
 			
 		String query = "DELETE FROM cliente WHERE idCliente = ?";
-		
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = conn.prepareStatement(query);
+			ps = conn.prepareStatement(query);
 			ps.setInt(1, id);
 			ps.executeUpdate();
-			this.closePsAndCommit(conn, ps);
+			this.commit(conn);
 		}catch(SQLException e) {
 			e.printStackTrace();
             System.err.println("Error al borrar el cliente: " + id);
+		}finally {
+			this.closePs(ps);
 		}
 
 	}
 	
 	public Iterable<ClienteConFacturacionDTO> getClientesPorFacturacion(Connection conn){
 		this.validateConnection(conn);
-		List<ClienteConFacturacionDTO> list = new LinkedList<ClienteConFacturacionDTO>();
+		Deque<ClienteConFacturacionDTO> list = new LinkedList<ClienteConFacturacionDTO>();
 		String query = "SELECT c.idCliente, c.nombre, SUM(fp.cantidad) as cantidad, SUM(p.valor * fp.cantidad) as total "
 				+ "FROM cliente c "
 				+ "JOIN factura f USING (idCliente) "
@@ -146,40 +162,45 @@ public class ClienteDAO implements DAO<Cliente>{
 				+ "JOIN producto p USING (idProducto) "
 				+ "GROUP BY c.idCliente "
 				+ "ORDER BY total desc";
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = conn.prepareStatement(query);
+			ps = conn.prepareStatement(query);
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
 				ClienteConFacturacionDTO cliente = new ClienteConFacturacionDTO(
 						rs.getString("nombre"),
 						rs.getInt("cantidad"),
 						rs.getFloat("total"));
-				list.add(cliente);
+				list.addLast(cliente);
 			}
 		}catch(SQLException e) {
 			e.printStackTrace();
 			System.err.println("Error al obtener los clientes que mas facturaron en orden");
 		}
+		this.closePs(ps);
 		return list;
 	}
 
-    private void closePsAndCommit(Connection conn, PreparedStatement ps) {
-		this.validateConnection(conn);
-            try {
-                conn.commit();
-            } catch (SQLException e) {
-                e.printStackTrace();
-                System.err.println("Error al hacer commit");
-            }finally {
-            	try {
-            		if(ps!=null)
-            			ps.close();            		
-            	}catch (SQLException e) {
-                    e.printStackTrace();
-                    System.err.println("Error al cerrar el prepared statement");
-                }
-            }
+    private void closePs(PreparedStatement ps) {
+		try {
+			if(ps!=null)
+				ps.close();
+		}catch (SQLException e) {
+			e.printStackTrace();
+			System.err.println("Error al cerrar el prepared statement");
+		}
+
     }
+
+	private void commit(Connection conn){
+		try {
+			conn.commit();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.err.println("Error al hacer commit");
+		}
+	}
+
 	private static void rollbackQuietly(Connection conn) {
 		try {
 			conn.rollback();
@@ -189,35 +210,39 @@ public class ClienteDAO implements DAO<Cliente>{
 		}
 	}
 	public void createTable(Connection conn) {
-		if(conn == null)
-			throw new IllegalArgumentException("La conexión no puede ser null");
-		String table = "CREATE TABLE IF NOT EXISTS cliente("
+		this.validateConnection(conn);
+		String newTable = "CREATE TABLE IF NOT EXISTS cliente("
 				+ "idCliente INT,"
 				+ "nombre VARCHAR(500),"
 				+ "email VARCHAR(350),"
 				+ "PRIMARY KEY(idCliente)"
 				+ ")";
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = conn.prepareStatement(table);
+			ps = conn.prepareStatement(newTable);
 			ps.execute();
-			this.closePsAndCommit(conn, ps);
+			this.commit(conn);
 		}catch(SQLException e) {
 			rollbackQuietly(conn);
 			System.err.println("Error al crear la tabla cliente");
+		}finally {
+			this.closePs(ps);
 		}
 	}
 	public void dropTable(Connection conn) {
-		if(conn == null)
-			throw new IllegalArgumentException("La conexión no puede ser null");
+		this.validateConnection(conn);
 		
 		String delete = "DROP TABLE IF EXISTS cliente";
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = conn.prepareStatement(delete);
+			ps = conn.prepareStatement(delete);
 			ps.execute();
-			this.closePsAndCommit(conn, ps);
+			this.commit(conn);
 		}catch(SQLException e) {
 			rollbackQuietly(conn);
 			System.err.println("Error al borrar la tabla cliente");
+		}finally {
+			this.closePs(ps);
 		}
 	}
 }

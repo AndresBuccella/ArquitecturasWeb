@@ -3,6 +3,7 @@ package main.java.db;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
 
 import main.java.dao.ClienteDAO;
 import main.java.dao.FacturaDAO;
@@ -54,21 +55,21 @@ public class MySQLDAOFactory extends FactoryDB{
     
 	@Override
 	public ClienteDAO getClienteDAO() throws SQLException {
-		return new ClienteDAO();
+		return ClienteDAO.getInstance();
 	}
 
 	@Override
 	public ProductoDAO getProductoDAO() throws SQLException {
-		return new ProductoDAO();
+		return ProductoDAO.getInstance();
 	}
 
 	@Override
 	public FacturaDAO getFacturaDAO() throws SQLException {
-		return new FacturaDAO();
+		return FacturaDAO.getInstance();
 	}
 
 	@Override
 	public FacturaProductoDAO getFacturaProductoDAO() throws SQLException {
-		return new FacturaProductoDAO();
+		return FacturaProductoDAO.getInstance();
 	}
 }

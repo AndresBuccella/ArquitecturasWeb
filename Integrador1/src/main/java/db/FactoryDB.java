@@ -20,7 +20,7 @@ public abstract class FactoryDB {
 	public abstract FacturaProductoDAO getFacturaProductoDAO() throws SQLException;
 	public abstract Connection getConnection() throws SQLException;
 	public abstract void closeConnection(Connection conn) throws SQLException;
-		
+
 	public static FactoryDB getDAOFactory(int whichFactory) throws SQLException {
 		switch(whichFactory) {
 			case MYSQL_JDBC: return MySQLDAOFactory.getInstance();

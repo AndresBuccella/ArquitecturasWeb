@@ -46,7 +46,7 @@ public class HelperCSVtoDB {
 						try {
 							int idCliente = Integer.parseInt(idString);
 							Cliente c = new Cliente(idCliente, nombre, email);
-							DAO<Cliente> dao = new ClienteDAO();
+							DAO<Cliente> dao = ClienteDAO.getInstance();
 							dao.save(conn, c);							
 						}catch(NumberFormatException e) {
 							System.err.println("Error de formato en datos de cliente: " + e.getMessage());
@@ -68,7 +68,7 @@ public class HelperCSVtoDB {
 							int idCliente = Integer.parseInt(idString);
 							float valor = Float.parseFloat(valorString);
 							Producto c = new Producto(idCliente, nombre, valor);
-							DAO<Producto> dao = new ProductoDAO();
+							DAO<Producto> dao = ProductoDAO.getInstance();
 							dao.save(conn, c);							
 						}catch(NumberFormatException e) {
 							System.err.println("Error de formato en datos de producto: " + e.getMessage());
@@ -89,7 +89,7 @@ public class HelperCSVtoDB {
 							int idFactura = Integer.parseInt(idFacturaString);
 							int idCliente = Integer.parseInt(idClienteString);
 							Factura f = new Factura(idFactura, idCliente);
-							DAO<Factura> dao = new FacturaDAO();
+							DAO<Factura> dao = FacturaDAO.getInstance();
 							dao.save(conn, f);							
 						}catch(NumberFormatException e) {
 							System.err.println("Error de formato en datos de producto: " + e.getMessage());
@@ -112,7 +112,7 @@ public class HelperCSVtoDB {
 							int idCliente = Integer.parseInt(idClienteString);
 							int cantidad = Integer.parseInt(cantidadString);
 							FacturaProducto f = new FacturaProducto(idFactura, idCliente, cantidad);
-							DAO<FacturaProducto> dao = new FacturaProductoDAO();
+							DAO<FacturaProducto> dao = FacturaProductoDAO.getInstance();
 							dao.save(conn, f);
 						}catch(NumberFormatException e) {
 							System.err.println("Error de formato en datos de factura-producto: " + e.getMessage());
