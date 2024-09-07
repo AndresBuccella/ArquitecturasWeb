@@ -47,8 +47,18 @@ public class Main {
 			}*/
 			//System.out.println(clienteDAO.get(conn, 1).get()); //El ultimo get obtiene el elemento dentro del optional
 			//System.out.println(pd.getProductoQueMasRecaudo(conn).get());
-			for(Cliente c : clienteDAO.getAll(conn))
-				System.out.println(c);
+			System.out.println(clienteDAO.get(conn, 1));
+			Cliente clienteMod = new Cliente(1, "R300", "mailTrucho");
+			clienteDAO.update(conn, clienteMod);
+			System.out.println(clienteDAO.get(conn, 1) + "linea 53");
+			clienteMod.setNombre("Xantha M. Guzman");
+			clienteMod.setEmail("vitae@incursuset.org");
+			clienteDAO.update(conn, clienteMod);
+			System.out.println(clienteDAO.get(conn, 1) + "linea 57");
+			clienteDAO.delete(conn, 1);
+			System.out.println(clienteDAO.get(conn, 1) + "linea 59");
+			Cliente clienteNuevo = new Cliente(1, "Xantha M. Guzman", "vitae@incursuset.org");
+			clienteDAO.save(conn, clienteNuevo);
 			fDB.closeConnection(conn);
 		}catch(Exception e) {
 			e.printStackTrace();
